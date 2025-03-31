@@ -1,5 +1,5 @@
 import os
-from fastapi import APIRouter, HTTPException, Depends, Form
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import async_session
 from app.schemas.user import UserCreate, UserOut, Token
@@ -67,4 +67,34 @@ async def read_users_me(
     user = await get_user_by_email(db, email)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+
+@router.post("/auth/avatar", response_model=UserOut)
+async def update_avatar(
+    token: str = Depends(oauth2_scheme),
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+):
+
+    from app.core.auth import decode_access_token
+
+    payload = decode_access_token(token)
+    if payload is None or "sub" not in payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    email = payload["sub"]
+
+    user = await get_user_by_email(db, email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    try:
+        result = cloudinary.uploader.upload(file.file, folder="avatars")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Avatar upload failed: {str(e)}")
+
+    user.avatar_url = result.get("secure_url")
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
     return user

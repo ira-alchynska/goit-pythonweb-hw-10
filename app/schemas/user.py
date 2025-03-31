@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr
+from typing import Optional
 
 
 class UserBase(BaseModel):
@@ -13,6 +14,7 @@ class UserOut(UserBase):
     id: int
     is_active: bool
     is_verified: bool
+    avatar_url: Optional[str] = None
 
     class Config:
         orm_mode = True
