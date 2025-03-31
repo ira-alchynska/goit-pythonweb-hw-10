@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+sqlalchemy
+asyncpg
+pydantic
+alembic
+python-jose[cryptography]     
+passlib[bcrypt]               
+python-dotenv
+bcrypt==3.2.0                 
+email-validator               
+cloudinary                 
+fastapi-limiter           
