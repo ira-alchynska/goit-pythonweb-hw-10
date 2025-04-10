@@ -1,3 +1,17 @@
+"""
+This module defines the API routes for user authentication and profile management.
+
+Routes:
+    - POST /auth/register: Registers a new user.
+    - POST /auth/login: Authenticates a user and returns an access token.
+    - GET /auth/me: Retrieves the authenticated user's profile.
+    - POST /auth/avatar: Updates the authenticated user's avatar.
+
+Dependencies:
+    - get_db: Provides a database session for route handlers.
+    - oauth2_scheme: Handles OAuth2 token authentication.
+"""
+
 import os
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
