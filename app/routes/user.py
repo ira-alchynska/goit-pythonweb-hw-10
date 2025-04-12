@@ -13,7 +13,7 @@ Dependencies:
 """
 
 import os
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import async_session
 from app.schemas.user import UserCreate, UserOut, Token
@@ -112,3 +112,6 @@ async def update_avatar(
     await db.commit()
     await db.refresh(user)
     return user
+
+app = FastAPI()
+app.include_router(router)
