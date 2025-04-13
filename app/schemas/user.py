@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 
 
@@ -31,11 +31,13 @@ class UserOut(UserBase):
         is_active (bool): Indicates if the user is active.
         is_verified (bool): Indicates if the user is verified.
         avatar_url (Optional[str]): The URL of the user's avatar (if any).
+        role (str): The role of the user (e.g., admin, user).
     """
     id: int
     is_active: bool
     is_verified: bool
     avatar_url: Optional[str] = None
+    role: str
 
     class Config:
         orm_mode = True
@@ -61,3 +63,13 @@ class TokenData(BaseModel):
         email (Optional[EmailStr]): The email address associated with the token (if any).
     """
     email: EmailStr | None = None
+    
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+class PasswordReset(BaseModel):
+    token: str = Field(..., example="reset-token")
+    new_password: str = Field(..., min_length=8)
+
+class Message(BaseModel):
+    message: str
