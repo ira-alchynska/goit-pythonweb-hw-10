@@ -3,6 +3,12 @@ from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from dotenv import load_dotenv
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+from passlib.context import CryptContext
+from fastapi import HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from app.models.user import User
 
 load_dotenv()
 
@@ -12,6 +18,9 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+RESET_PASSWORD_SALT = "password-reset-salt"
+TOKEN_EXPIRATION_SECONDS = 3600  # 1 hour
+serializer = URLSafeTimedSerializer(SECRET_KEY)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
@@ -40,3 +49,31 @@ def decode_access_token(token: str):
         return payload
     except JWTError:
         return None
+    
+def generate_reset_token(email: str) -> str:
+    return serializer.dumps(email, salt=RESET_PASSWORD_SALT)
+
+def verify_reset_token(token: str, expiration: int = TOKEN_EXPIRATION_SECONDS) -> str:
+    try:
+        email = serializer.loads(token, salt=RESET_PASSWORD_SALT, max_age=expiration)
+    except SignatureExpired:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The reset token has expired."
+        )
+    except BadSignature:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid reset token."
+        )
+    return email
+
+async def update_user_password(db: AsyncSession, email: str, new_password: str):
+    result = await db.execute(select(User).where(User.email == email))
+    user = result.scalars().first()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    user.hashed_password = get_password_hash(new_password)
+    await db.commit()
+    await db.refresh(user)
+    return user
